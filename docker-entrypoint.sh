@@ -30,6 +30,11 @@ Environment variables:
     Set to 0 to disable cgroup nesting.
     The default is automatic detection.
 
+  K0S_ENTRYPOINT_MOUNTS_FIXUP
+    Set to 1 to make / mount rshared, fixing e.g. the setup of Cilium.
+    Set to 0 to disable.
+    Default is on.
+
   K0S_ENTRYPOINT_DNS_FIXUP
     Set to 1 to apply DNS fixes required for the Docker embedded DNS setup.
     Set to 0 to disable.
@@ -190,6 +195,12 @@ enable_cgroupv2_nesting() {
   }
 }
 
+mount_fixup(){
+  if [ "${K0S_ENTRYPOINT_MOUNTS_FIXUP-}" != 0 ]; then
+    mount --make-rshared /
+  fi
+}
+
 # DNS fixup adapted from kind.
 dns_fixup() {
   case "${K0S_ENTRYPOINT_DNS_FIXUP-}" in
@@ -306,6 +317,7 @@ main() {
 
   remount_cgroup2fs
   enable_cgroupv2_nesting
+  mount_fixup
   dns_fixup
   write_k0s_config
 
@@ -316,6 +328,7 @@ main() {
     -u K0S_ENTRYPOINT_ROLE \
     -u K0S_ENTRYPOINT_REMOUNT_CGROUP2FS \
     -u K0S_ENTRYPOINT_ENABLE_CGROUPV2_NESTING \
+    -u K0S_ENTRYPOINT_MOUNTS_FIXUP \
     -u K0S_ENTRYPOINT_DNS_FIXUP \
     -u K0S_CONFIG \
     -- "$@"
